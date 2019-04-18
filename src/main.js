@@ -1,3 +1,7 @@
-var App = console.log ("Ok testing done")
+"use strict";
 
-module.exports = App;
+import * as $ from 'jquery';
+import React from "react";
+import Home from "./components/homePage";
+
+React.render(<Home/>, document.getElementById('app'));

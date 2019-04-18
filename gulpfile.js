@@ -6,6 +6,9 @@ var open = require('gulp-open')// open urkl in browser
 var browserify = require("browserify");
 var reactify = require("reactify");
 var source = require("vinyl-source-stream");
+var concat = require('gulp-concat');
+var lint = require('gulp-eslint');
+var fs = require("fs");
 
 var config = {
 	port: 8001,
@@ -13,6 +16,10 @@ var config = {
 	paths: {
 		html: './src/*.html', //globs that looks like regix
 		js :'./src/**/*.js',
+		css: [
+			'node_modules/bootstrap/dist/css/bootstrap.css',
+			'node_modules/bootstrap/dist/css/bootstrap-theme-min.css'
+		],
 		dist: './dist',
 		mainJs: './src/main.js'
 	}
@@ -26,6 +33,21 @@ gulp.task('connect',function(){
 		livereload: true
 	})
 });
+
+gulp.task('lint',function(){
+	return gulp.src(config.paths.js)
+		.pipe(lint({config:'eslint.config.json'}))
+		.pipe(lint.format());
+});
+
+
+// Gulp css task
+gulp.task('css',function(){
+	gulp.src(config.paths.css)
+	.pipe(concat('bundle.css'))
+	.pipe(gulp.dest(config.paths.dist + '/css'));
+});
+
 
 gulp.task('open', ['connect'] , function(){
 	gulp.src('./dist/index.html').pipe(open({ uri : config.devBaseUrl + ':' + config.port + '/'}));
@@ -41,13 +63,13 @@ gulp.task('html', function(){
 // Watches file so every time a change is made the browser is reloaded 
 gulp.task('watch', function(){
 	gulp.watch(config.paths.html , ['html']);
-	gulp.watch(config.paths.html , ['js']);
+	gulp.watch(config.paths.js , ['js' , 'lint']);
 });
 
 
 gulp.task('js',function(){
 	browserify(config.paths.mainJs)
-		.transform(reactify)
+		.transform("babelify", {presets: ["@babel/preset-env", "@babel/preset-react"]})
 		.bundle()
 		.on('error', console.error.bind(console))
 		.pipe(source('bundle.js'))
@@ -55,4 +77,4 @@ gulp.task('js',function(){
 		.pipe(connect.reload());
 });
 
-gulp.task('default', ['html' , 'js' ,'open' , 'watch']);
+gulp.task('default', ['html' ,'open' , 'watch' , 'js' , 'css' , 'lint']);
